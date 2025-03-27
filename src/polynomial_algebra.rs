@@ -90,6 +90,22 @@ pub(crate) fn polyrem(x: Polynomial<i64>, f: &Polynomial<i64>) -> Polynomial<i64
     }
 }
 
+/// Additive inverse of a polynomial
+/// # Arguments:
+///	* `x` - polynomial to be inverted
+/// * `modulus` - coefficient modulus.
+/// # Returns:
+///	polynomial in Z_modulus[X]
+fn polyinv(x : &Polynomial<i64>, modulus: i64) -> Polynomial<i64> {
+    //Additive inverse of polynomial x modulo modulus
+    let y = -x;
+    if modulus != 0 {
+        mod_coeffs(y, modulus)
+    } else {
+        y
+    }
+}
+
 /// Add two polynomials
 /// # Arguments:
 ///	* `x` - polynomial to be added
@@ -107,4 +123,16 @@ pub(crate) fn polyadd(x : &Polynomial<i64>, y : &Polynomial<i64>, modulus : i64,
     else {
         r
     }
+}
+
+/// Subtract two polynomials
+/// # Arguments:
+///	* `x` - polynomial to be subtracted
+/// * `y` - polynomial to be subtracted.
+/// * `modulus` - coefficient modulus.
+///	* `f` - polynomial modulus.
+/// # Returns:
+///	polynomial in Z_modulus[X]/(f)
+pub(crate) fn polysub(x : &Polynomial<i64>, y : &Polynomial<i64>, modulus : i64, f : &Polynomial<i64>) -> Polynomial<i64> {
+    polyadd(x, &polyinv(y, modulus), modulus, f)
 }

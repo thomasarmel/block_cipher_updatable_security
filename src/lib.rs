@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod key;
 pub mod error;
 mod utils;
