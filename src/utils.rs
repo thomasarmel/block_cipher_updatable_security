@@ -1,35 +1,16 @@
 
 // Inspired from https://github.com/lattice-based-cryptography/ring-lwe/blob/main/src/utils.rs
 
+use crate::polynomial_algebra::mod_coeffs;
 use polynomial_ring::Polynomial;
 use rand::distr::{Distribution, Uniform};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 
-
-/// Take remainder of the coefficients of a polynom by a given modulus
-/// # Arguments:
-/// * `x` - polynomial in Z[X]
-///	* `modulus` - coefficient modulus
-/// # Returns:
-/// polynomial in Z_modulus[X]
-pub(crate) fn mod_coeffs(x : Polynomial<i64>, modulus : i64) -> Polynomial<i64> {
-
-    let coeffs = x.coeffs();
-    let mut newcoeffs = vec![];
-    let mut c;
-    if coeffs.len() == 0 {
-        // return original input for the zero polynomial
-        x
-    } else {
-        for i in 0..coeffs.len() {
-            c = coeffs[i].rem_euclid(modulus);
-            if c > modulus/2 {
-                c = c-modulus;
-            }
-            newcoeffs.push(c);
-        }
-        Polynomial::new(newcoeffs)
+fn get_rng_from_seed(seed: Option<u64>) -> StdRng {
+    match seed {
+        Some(seed) => StdRng::seed_from_u64(seed),
+        None => StdRng::from_os_rng(),
     }
 }
 
@@ -42,13 +23,34 @@ pub(crate) fn mod_coeffs(x : Polynomial<i64>, modulus : i64) -> Polynomial<i64> 
 ///	uniform polynomial with coefficients in {0,1,...,q-1}
 pub(crate) fn gen_uniform_poly(size: usize, q: i64, seed: Option<u64>) -> Polynomial<i64> {
     let between = Uniform::new(0, q).unwrap();
-    let mut rng = match seed {
-        Some(seed) => StdRng::seed_from_u64(seed),
-        None => StdRng::from_os_rng(),
-    };
+    let mut rng = get_rng_from_seed(seed);
     let mut coeffs = vec![0i64; size];
     for i in 0..size {
         coeffs[i] = between.sample(&mut rng);
     }
     mod_coeffs(Polynomial::new(coeffs),q)
+}
+
+/// Generate a ternary polynomial
+/// # Arguments:
+///	* `size` - number of coefficients
+/// * `seed` - random seed
+/// # Returns:
+///	ternary polynomial with coefficients in {-1,0,+1}
+pub(crate) fn gen_ternary_poly(size : usize, seed: Option<u64>) -> Polynomial<i64> {
+    let between = Uniform::new(-1,2).unwrap();
+    let mut rng = get_rng_from_seed(seed);
+    let mut coeffs = vec![0i64;size];
+    for i in 0..size {
+        coeffs[i] = between.sample(&mut rng);
+    }
+    Polynomial::new(coeffs)
+}
+
+/// Generate polynomial modulus (x^n + 1 representation)
+pub(crate) fn generate_polynomial_modulus(polynomial_size: usize) -> Polynomial<i64> {
+    let mut coeffs = vec![0i64; polynomial_size + 1];
+    coeffs[0] = 1;
+    coeffs[polynomial_size] = 1;
+    Polynomial::new(coeffs)
 }
