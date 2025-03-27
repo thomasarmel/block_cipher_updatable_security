@@ -1,0 +1,10 @@
+[package]
+name = "block_cipher_updatable_security"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+thiserror = "2.0"
+polynomial-ring = "0.5"
+rand = "0.9"
+rand_distr = "0.5"
