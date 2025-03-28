@@ -33,8 +33,12 @@ impl Key {
         let super_block_count = block_count >> 1; // floor(block_count/2)
         let a = gen_uniform_poly(self.security_level, POLYNOMIAL_Q as i64, Some(super_block_count));
         let e = gen_ternary_poly(self.security_level, Some(self.generate_error_seed(block_count)));
+        let mut key = self.key.clone();
+        if block_count & 1 == 1 {
+            key = polymul_fast(&key, &key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega); // square the key if odd block count
+        }
         polyadd(
-            &polymul_fast(&a, &self.key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega),
+            &polymul_fast(&a, &key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega),
             &e,
             POLYNOMIAL_Q as i64,
             &self.modulus_polynomial
@@ -47,6 +51,10 @@ impl Key {
         block_count.to_le_bytes().iter().for_each(| x| hasher.update(&x.to_le_bytes()));
         let result = hasher.finalize();
         u64::from_le_bytes(result.as_slice()[0..8].try_into().unwrap())
+    }
+
+    pub(crate) fn get_modulus_polynomial(&self) -> &Polynomial<i64> {
+        &self.modulus_polynomial
     }
 }
 
