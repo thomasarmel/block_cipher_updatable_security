@@ -29,16 +29,20 @@ impl Key {
         self.security_level
     }
 
-    pub(crate) fn generate_encryption_polynomial(&self, block_count: u64) -> Polynomial<i64> {
+    fn generate_encryption_factor_polynomial(&self, block_count: u64) -> Polynomial<i64> {
         let super_block_count = block_count >> 1; // floor(block_count/2)
         let a = gen_uniform_poly(self.security_level, POLYNOMIAL_Q as i64, Some(super_block_count));
-        let e = gen_ternary_poly(self.security_level, Some(self.generate_error_seed(block_count)));
         let mut key = self.key.clone();
         if block_count & 1 == 1 {
             key = polymul_fast(&key, &key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega); // square the key if odd block count
         }
+        polymul_fast(&a, &key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega)
+    }
+
+    pub(crate) fn generate_encryption_polynomial(&self, block_count: u64) -> Polynomial<i64> {
+        let e = gen_ternary_poly(self.security_level, Some(self.generate_error_seed(block_count))); // None to test
         polyadd(
-            &polymul_fast(&a, &key, POLYNOMIAL_Q as i64, &self.modulus_polynomial, self.omega),
+            &self.generate_encryption_factor_polynomial(block_count),
             &e,
             POLYNOMIAL_Q as i64,
             &self.modulus_polynomial
@@ -58,13 +62,14 @@ impl Key {
     }
 
     pub(crate) fn decrypt_block_polynomial(&self, encrypted_block: &Polynomial<i64>, block_count: u64) -> Polynomial<i64> {
-        let encryption_block = self.generate_encryption_polynomial(block_count);
-        polysub(
+        let encryption_block = self.generate_encryption_factor_polynomial(block_count);
+        let sub = polysub(
             encrypted_block,
             &encryption_block,
             POLYNOMIAL_Q as i64,
             &self.modulus_polynomial
-        ) // TODO take closer
+        );
+        Polynomial::new(sub.coeffs().iter().map(|coef| if coef.abs() > POLYNOMIAL_Q as i64 / 4 { POLYNOMIAL_Q as i64 / 2 } else { 0 }).collect())
     }
 }
 

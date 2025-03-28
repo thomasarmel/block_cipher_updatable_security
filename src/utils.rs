@@ -61,6 +61,7 @@ pub(crate) fn generate_polynomial_modulus(polynomial_size: usize) -> Polynomial<
 /// * `b` - denominator
 /// # Returns:
 ///	nearest integer to the ratio a/b
+#[allow(dead_code)]
 pub(crate) fn nearest_int(a: i64, b: i64) -> i64 {
     if a > 0 {
         (a + b / 2) / b

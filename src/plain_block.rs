@@ -16,7 +16,7 @@ impl PlainBlock {
             return Err(BlockCipherUpdatableSecurityError::InvalidBlockSize);
         }
         let coefs: Vec<i64> = input_bytes.iter().flat_map(|byte|
-            (0..8).rev().map(move |i| ((byte >> i) & 1u8) as i64)
+            (0..8).rev().map(move |i| ((byte >> i) & 1u8) as i64 * (POLYNOMIAL_Q as i64 / 2))
         ).collect();
         Ok(Self {
             block_polynomial: Polynomial::new(coefs),
@@ -27,6 +27,7 @@ impl PlainBlock {
 
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         self.block_polynomial.coeffs().iter().enumerate().fold(vec![0u8; self.block_size_bits / 8], |mut acc, (i, &coef)| {
+            let coef = if coef == 0 { 0 } else { 1 };
             acc[i / 8] |= (coef << (7 - (i % 8))) as u8;
             acc
         })
