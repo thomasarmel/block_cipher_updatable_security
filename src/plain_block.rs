@@ -5,7 +5,8 @@ use crate::polynomial_algebra::polyadd;
 
 pub(crate) struct PlainBlock {
     block_polynomial: Polynomial<i64>,
-    block_count: u64
+    block_count: u64,
+    block_size_bits: usize
 }
 
 impl PlainBlock {
@@ -19,14 +20,23 @@ impl PlainBlock {
         ).collect();
         Ok(Self {
             block_polynomial: Polynomial::new(coefs),
-            block_count
+            block_count,
+            block_size_bits: input_bytes_count * 8
         })
     }
 
-    pub(crate) fn from_polynomial(block_polynomial: Polynomial<i64>, block_count: u64) -> Self {
+    pub(crate) fn to_bytes(&self) -> Vec<u8> {
+        self.block_polynomial.coeffs().iter().enumerate().fold(vec![0u8; self.block_size_bits / 8], |mut acc, (i, &coef)| {
+            acc[i / 8] |= (coef << (7 - (i % 8))) as u8;
+            acc
+        })
+    }
+
+    pub(crate) fn from_polynomial(block_polynomial: Polynomial<i64>, block_count: u64, block_size_bits: usize) -> Self {
         Self {
             block_polynomial,
-            block_count
+            block_count,
+            block_size_bits
         }
     }
 
@@ -40,5 +50,23 @@ impl PlainBlock {
             ),
             self.block_count
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::plain_block::PlainBlock;
+
+    #[test]
+    fn test_plaintext_to_bytes() {
+        const BYTES: &[u8; 8] = b"Hello, w";
+        let plain_block = PlainBlock::from_bytes(BYTES, 0).unwrap();
+        let bytes = plain_block.to_bytes();
+        assert_eq!(BYTES, &bytes[..]);
+
+        const BYTES2: &[u8; 16] = b"Hello, my world!";
+        let plain_block = PlainBlock::from_bytes(BYTES2, 0).unwrap();
+        let bytes = plain_block.to_bytes();
+        assert_eq!(BYTES2, &bytes[..]);
     }
 }

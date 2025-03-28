@@ -1,4 +1,6 @@
 use polynomial_ring::Polynomial;
+use crate::Key;
+use crate::plain_block::PlainBlock;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct EncryptedBlock {
@@ -33,6 +35,14 @@ impl EncryptedBlock {
             polynomial: Polynomial::new(coefs),
             block_count,
         }
+    }
+
+    pub(crate) fn decrypt(&self, key: &Key) -> PlainBlock {
+        PlainBlock::from_polynomial(
+            key.decrypt_block_polynomial(&self.polynomial, self.block_count),
+            self.block_count,
+            key.security_level()
+        )
     }
 }
 

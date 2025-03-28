@@ -1,8 +1,8 @@
+use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
+use crate::utils::{gen_ternary_poly, gen_uniform_poly, generate_polynomial_modulus};
+use crate::{BlockCipherUpdatableSecurityError, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
 use sha3::{Digest, Sha3_256};
-use crate::{BlockCipherUpdatableSecurityError, POLYNOMIAL_Q};
-use crate::polynomial_algebra::{polyadd, polymul_fast};
-use crate::utils::{gen_ternary_poly, gen_uniform_poly, generate_polynomial_modulus};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Key {
@@ -55,6 +55,16 @@ impl Key {
 
     pub(crate) fn get_modulus_polynomial(&self) -> &Polynomial<i64> {
         &self.modulus_polynomial
+    }
+
+    pub(crate) fn decrypt_block_polynomial(&self, encrypted_block: &Polynomial<i64>, block_count: u64) -> Polynomial<i64> {
+        let encryption_block = self.generate_encryption_polynomial(block_count);
+        polysub(
+            encrypted_block,
+            &encryption_block,
+            POLYNOMIAL_Q as i64,
+            &self.modulus_polynomial
+        ) // TODO take closer
     }
 }
 

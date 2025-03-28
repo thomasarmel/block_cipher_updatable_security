@@ -54,3 +54,17 @@ pub(crate) fn generate_polynomial_modulus(polynomial_size: usize) -> Polynomial<
     coeffs[polynomial_size] = 1;
     Polynomial::new(coeffs)
 }
+
+/// nearest integer to the ratio a/b
+/// # Arguments:
+///	* `a` - numerator
+/// * `b` - denominator
+/// # Returns:
+///	nearest integer to the ratio a/b
+pub(crate) fn nearest_int(a: i64, b: i64) -> i64 {
+    if a > 0 {
+        (a + b / 2) / b
+    } else {
+        -((-a + b / 2) / b)
+    }
+}
