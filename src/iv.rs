@@ -6,7 +6,6 @@ use polynomial_ring::Polynomial;
 pub struct Iv {
     polynomial: Polynomial<i64>,
     initial_security: usize,
-    omega: i64,
 }
 
 impl Iv {
@@ -14,7 +13,6 @@ impl Iv {
         Self {
             polynomial: gen_uniform_poly(initial_security, POLYNOMIAL_Q as i64, None),
             initial_security,
-            omega: ntt::omega(POLYNOMIAL_Q as i64, 2 * initial_security),
         }
     }
 
@@ -22,7 +20,6 @@ impl Iv {
         Self {
             polynomial,
             initial_security,
-            omega: ntt::omega(POLYNOMIAL_Q as i64, 2 * initial_security),
         }
     }
 
@@ -40,7 +37,6 @@ impl Iv {
             exponent,
             POLYNOMIAL_Q as i64,
             &modulo,
-            self.omega,
         )
     }
 }

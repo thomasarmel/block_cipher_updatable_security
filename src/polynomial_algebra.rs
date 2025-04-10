@@ -98,7 +98,6 @@ pub(crate) fn poly_pow_mod(
     n: usize,
     q: i64,
     modulus: &Polynomial<i64>,
-    omega: i64,
 ) -> Polynomial<i64> {
     let mut r = Polynomial::one();
     let mut x = x.clone();
@@ -200,47 +199,12 @@ mod tests {
     fn test_poly_pow_mod() {
         let x = Polynomial::new(vec![1, 2, 3]);
         let modulo = Polynomial::new(vec![1, 0, 0, 1]);
-        let result = super::poly_pow_mod(&x, 2, 7, &modulo, 1);
+        let result = super::poly_pow_mod(&x, 2, 7, &modulo);
         let expected = polymul_fast(&x, &x, 7, &modulo);
         assert_eq!(result, expected);
 
         let expected = polymul_fast(&expected, &x, 7, &modulo);
-        let result = super::poly_pow_mod(&x, 3, 7, &modulo, 1);
+        let result = super::poly_pow_mod(&x, 3, 7, &modulo);
         assert_eq!(result, expected);
-    }
-
-    /// Ensure polymul_fast is equivalent to polymul
-    #[test]
-    fn test_poly_mul_fast() {
-        let x = Polynomial::new(vec![1, 2, 3, 4]);
-        let y = Polynomial::new(vec![4, 5, 6, 7]);
-        let q = POLYNOMIAL_Q as i64;
-        let f = Polynomial::new(vec![3, 4, 5, 0, 1]); // x^3 + 1
-        let omega = 4;
-        let expected = polymul(&x, &y, q, &f);
-        println!("expected: {}", expected);
-        fn gcd(a: i64, b: i64) -> i64 {
-            if b == 0 {
-                a
-            } else {
-                gcd(b, a % b)
-            }
-        }
-
-        // find omega that works
-        for i in 1..60 {
-
-            //let omega = ntt::omega(q, (1<<i) as usize);
-            println!("{}", (f.deg().unwrap()).next_power_of_two());
-            let omega = ntt::omega(q, (f.deg().unwrap()+1).next_power_of_two());
-            if polymul_fast(&x, &y, q, &f) == expected {
-                println!("Found omega: {} = 2^{}", omega, i);
-                //break;
-            }
-        }
-        println!("no omega");
-        assert!(false);
-        // let result = polymul_fast(&x, &y, q, &f, omega);
-        // assert_eq!(expected, result);
     }
 }

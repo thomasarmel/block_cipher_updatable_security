@@ -74,7 +74,6 @@ pub fn increase_security_level(
                 &generate_merging_block_polynomial(old_security_level),
                 POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
-                //new_key.omega(),
             ),
             &Polynomial::one(),
             POLYNOMIAL_Q as i64,

@@ -11,7 +11,6 @@ pub struct Key {
     key: Polynomial<i64>,
     security_level: usize,
     modulus_polynomial: Polynomial<i64>, // no need for serialization
-    omega: i64,                          // no need for serialization,
 }
 
 impl Key {
@@ -30,7 +29,6 @@ impl Key {
             modulus_polynomial: IrreducibleModulo::get_irreducible_modulo(
                 key_size_bits_security_level,
             ),
-            omega: ntt::omega(POLYNOMIAL_Q as i64, 2 * key_size_bits_security_level),
         })
     }
 
@@ -39,7 +37,6 @@ impl Key {
             key: key.clone(),
             security_level,
             modulus_polynomial: IrreducibleModulo::get_irreducible_modulo(security_level),
-            omega: ntt::omega(POLYNOMIAL_Q as i64, 2 * security_level),
         }
     }
 
@@ -128,10 +125,6 @@ impl Key {
                 })
                 .collect(),
         )
-    }
-
-    pub(crate) fn omega(&self) -> i64 {
-        self.omega
     }
 }
 
