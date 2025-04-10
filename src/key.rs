@@ -3,7 +3,6 @@ use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
 use crate::utils::{gen_ternary_poly, gen_uniform_poly};
 use crate::{BlockCipherUpdatableSecurityError, Iv, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
-use rand_distr::num_traits::Zero;
 use sha3::{Digest, Sha3_256};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -17,10 +16,7 @@ impl Key {
     pub fn generate(
         key_size_bits_security_level: usize,
     ) -> Result<Self, BlockCipherUpdatableSecurityError> {
-        if key_size_bits_security_level.count_ones() != 1
-        /*|| key_size_bits_security_level < 128*/
-        {
-            // TODO
+        if key_size_bits_security_level.count_ones() != 1 || key_size_bits_security_level < 128 {
             return Err(BlockCipherUpdatableSecurityError::InvalidKeySize);
         }
         Ok(Self {

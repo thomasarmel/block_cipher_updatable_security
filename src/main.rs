@@ -9,8 +9,8 @@ use polynomial_ring::polynomial;
 const PLAINTEXT: &[u8] = b"Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!";
 
 fn main() {
-    let iv = Iv::generate(8);
-    let key1 = Key::generate(8).unwrap();
+    let iv = Iv::generate(128);
+    let key1 = Key::generate(128).unwrap();
     //println!("Key1: {:?}", key1);
     let start = std::time::Instant::now();
     let encrypted = encrypt(PLAINTEXT, &key1, &iv);
@@ -23,8 +23,11 @@ fn main() {
     //println!("Decrypted: {:?}", &decrypted);
     //println!("Decrypted: {:?}", std::str::from_utf8(&decrypted).unwrap());
 
-    let key2 = Key::generate(16).unwrap();
+    let key2 = Key::generate(256).unwrap();
+    let start = std::time::Instant::now();
     let encrypted2 = increase_security_level(&encrypted, &iv, &key1, &key2).unwrap();
+    let elapsed = start.elapsed();
+    println!("Security level increase took: {:?}", elapsed);
     let decrypted2 = decrypt(&encrypted2, &key2, &iv);
     println!("Decrypted2: {:?}", decrypted2);
     println!("Decrypted: {:?}", std::str::from_utf8(&decrypted2).unwrap());

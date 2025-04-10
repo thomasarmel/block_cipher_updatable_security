@@ -3,7 +3,6 @@ use crate::irreducible_modulos::IrreducibleModulo;
 use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
 use crate::{BlockCipherUpdatableSecurityError, Iv, Key, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
-use rand_distr::num_traits::Zero;
 
 pub(crate) struct PlainBlock {
     block_polynomial: Polynomial<i64>,
@@ -93,6 +92,7 @@ impl PlainBlock {
         )
     }
 
+    #[allow(dead_code)]
     pub(crate) fn polynomial(&self) -> &Polynomial<i64> {
         &self.block_polynomial
     }

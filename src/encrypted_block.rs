@@ -31,11 +31,13 @@ impl EncryptedBlock {
         &self.mul_polynomial
     }
 
+    #[allow(dead_code)]
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         serde_cbor::to_vec(self).unwrap()
     }
 
     // inverse of to_bytes
+    #[allow(dead_code)]
     pub(crate) fn from_bytes(encrypted_bytes: &[u8]) -> Self {
         serde_cbor::from_slice(encrypted_bytes).unwrap()
     }

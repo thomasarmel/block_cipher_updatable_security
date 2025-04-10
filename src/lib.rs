@@ -83,9 +83,6 @@ pub fn increase_security_level(
         POLYNOMIAL_Q as i64,
         new_key.get_modulus_polynomial(),
     );
-    //println!("Test: {}", polymul_fast(&iv.polynomial(), &generate_merging_block_polynomial(old_security_level), POLYNOMIAL_Q as i64, new_key.get_modulus_polynomial()));
-
-    //println!("temp_key: {} * ({} * {} + {}) mod {} = {}", old_key.polynomial(), iv.polynomial(), generate_merging_block_polynomial(old_security_level), Polynomial::<i64>::one(), new_key.get_modulus_polynomial(), temp_key_polynomial);
 
     let cipher_blocks: Vec<EncryptedBlock> = serde_cbor::from_slice(ciphertext).unwrap();
 
@@ -97,14 +94,7 @@ pub fn increase_security_level(
             if encrypted_blocks_bytes.len() == 1 {
                 let null_bytes = vec![0u8; old_security_level >> 3];
                 let null_plain_block = PlainBlock::from_bytes(&null_bytes, encrypted_blocks_bytes[0].block_count() + 1).unwrap();
-                //PlainBlock::from_polynomial(Polynomial::zero(), (new_block_count as u64 * 2) + 1, old_security_level);
-                println!("ADD");
                 let null_encrypted_block = null_plain_block.encrypt(old_key, iv);
-                /*let null_encrypted_block = EncryptedBlock::new(
-                    Polynomial::zero(),
-                    Polynomial::zero(),
-                    (new_block_count as u64 * 2) + 1,
-                );*/
                 encrypted_blocks_bytes.push(null_encrypted_block);
             }
 
@@ -120,9 +110,6 @@ pub fn increase_security_level(
                 POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
             );
-            //println!("blocks: {:?}", encrypted_blocks_bytes);
-            //println!("merged: {}", expanded_block);
-            // even + X^n . odd + Irr . (w + X^n * o)
             (new_block_count, expanded_block)
         })
         .map(|(super_block_count, temp_polynomial)| {

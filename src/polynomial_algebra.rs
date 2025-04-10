@@ -47,7 +47,7 @@ pub(crate) fn polymul_fast(
     // product will have degree of deg(a) + deg(b) + 1
     // we want n to be the smallest power of 2 that's >= deg(a) + deg(b) + 1
     let omega = ntt::omega(q, (x.deg().unwrap() + y.deg().unwrap() + 1).next_power_of_two());
-    
+
     let n1 = x.coeffs().len();
     let n2 = y.coeffs().len();
     // Compute the nearest power of 2 at least twice the max of input degrees+1
@@ -191,7 +191,7 @@ pub(crate) fn polysub(
 
 #[cfg(test)]
 mod tests {
-    use crate::polynomial_algebra::{polymul_fast, polymul};
+    use crate::polynomial_algebra::polymul_fast;
     use polynomial_ring::Polynomial;
     use crate::POLYNOMIAL_Q;
 
@@ -199,12 +199,12 @@ mod tests {
     fn test_poly_pow_mod() {
         let x = Polynomial::new(vec![1, 2, 3]);
         let modulo = Polynomial::new(vec![1, 0, 0, 1]);
-        let result = super::poly_pow_mod(&x, 2, 7, &modulo);
-        let expected = polymul_fast(&x, &x, 7, &modulo);
+        let result = super::poly_pow_mod(&x, 2, POLYNOMIAL_Q as i64, &modulo);
+        let expected = polymul_fast(&x, &x, POLYNOMIAL_Q as i64, &modulo);
         assert_eq!(result, expected);
 
-        let expected = polymul_fast(&expected, &x, 7, &modulo);
-        let result = super::poly_pow_mod(&x, 3, 7, &modulo);
+        let expected = polymul_fast(&expected, &x, POLYNOMIAL_Q as i64, &modulo);
+        let result = super::poly_pow_mod(&x, 3, POLYNOMIAL_Q as i64, &modulo);
         assert_eq!(result, expected);
     }
 }
