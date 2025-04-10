@@ -1,4 +1,22 @@
 use const_map::const_map;
+use polynomial_ring::Polynomial;
+
+const IRREDUCIBLE_2: &'static [i64] = &[268409856, 1, 1];
+
+const IRREDUCIBLE_4: &'static [i64] = &[1, 1, 1, 1, 1];
+
+const IRREDUCIBLE_8: &'static [i64] = &[4096, 512, 320, 268409721, 268409811, 268409840, 5, 1, 1];
+
+const IRREDUCIBLE_16: &'static [i64] = &[
+    3721, 17690, 15475, 268366533, 268323213, 268391281, 63779, 44003, 268400109, 268392652,
+    268407281, 2183, 650, 268409759, 268409812, 1, 1,
+];
+
+const IRREDUCIBLE_32: &'static [i64] = &[
+    27583, 93555, 268389713, 268210868, 175914, 268095200, 132437, 268083514, 496535, 151090,
+    431212, 267872284, 98317, 33297, 541045, 268245916, 268273004, 268099057, 75534, 54402, 95912,
+    268393274, 268399348, 268394055, 1854, 1071, 1385, 268409758, 268409804, 268409797, 2, 1, 1,
+];
 
 const IRREDUCIBLE_128: &'static [i64] = &[
     112785098, 253678562, 140631080, 13182154, 211413522, 136274299, 254265353, 50475990,
@@ -942,10 +960,15 @@ const IRREDUCIBLE_4096: &'static [i64] = &[
     28133513, 208466288, 209336609, 268389415, 268389382, 1, 1,
 ];
 
-struct IrreducibleModulo {}
+pub(crate) struct IrreducibleModulo {}
 
 impl IrreducibleModulo {
     const_map!(MAP, get(), (usize => &'static [i64]) {
+        2 => IRREDUCIBLE_2,
+        4 => IRREDUCIBLE_4,
+        8 => IRREDUCIBLE_8,
+        16 => IRREDUCIBLE_16,
+        32 => IRREDUCIBLE_32,
         128 => IRREDUCIBLE_128,
         256 => IRREDUCIBLE_256,
         512 => IRREDUCIBLE_512,
@@ -953,4 +976,8 @@ impl IrreducibleModulo {
         2048 => IRREDUCIBLE_2048,
         4096 => IRREDUCIBLE_4096,
     });
+
+    pub(crate) fn get_irreducible_modulo(degree: usize) -> Polynomial<i64> {
+        Polynomial::new(Self::get(degree).unwrap().to_vec())
+    }
 }
