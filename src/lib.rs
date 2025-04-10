@@ -145,7 +145,7 @@ pub fn increase_security_level(
 
 #[cfg(test)]
 mod tests {
-    use crate::{decrypt, encrypt, Iv, Key};
+    use crate::{decrypt, encrypt, increase_security_level, Iv, Key};
 
     #[test]
     fn test_encrypt_decrypt_large() {
@@ -157,5 +157,24 @@ mod tests {
 
         let decrypted = decrypt(&encrypted, &key1, &iv);
         assert_eq!(*PLAINTEXT, decrypted[0..PLAINTEXT.len()]);
+    }
+
+    #[test]
+    fn test_reencryption() {
+        const PLAINTEXT: &'static str = "Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!";
+        let plain_bytes = PLAINTEXT.as_bytes();
+
+        let iv = Iv::generate(128);
+        let key1 = Key::generate(128).unwrap();
+        let encrypted = encrypt(plain_bytes, &key1, &iv);
+        let decrypted = decrypt(&encrypted, &key1, &iv);
+        let decrypted_text = std::str::from_utf8(&decrypted).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted_text.to_string());
+
+        let key2 = Key::generate(256).unwrap();
+        let encrypted2 = increase_security_level(&encrypted, &iv, &key1, &key2).unwrap();
+        let decrypted2 = decrypt(&encrypted2, &key2, &iv);
+        let decrypted2_text = std::str::from_utf8(&decrypted2).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted2_text.to_string());
     }
 }

@@ -30,7 +30,7 @@ fn main() {
     println!("Security level increase took: {:?}", elapsed);
     let decrypted2 = decrypt(&encrypted2, &key2, &iv);
     println!("Decrypted2: {:?}", decrypted2);
-    println!("Decrypted: {:?}", std::str::from_utf8(&decrypted2).unwrap());
+    println!("Decrypted: {}", std::str::from_utf8(&decrypted2).unwrap());
 
     /*println!("Plain: {}", PLAINTEXT.len());
     println!(
