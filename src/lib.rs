@@ -38,6 +38,7 @@ pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
             };
             let plain_block =
                 PlainBlock::from_bytes(plain_block_bytes, block_count as u64).unwrap();
+            //println!("{}", block_count);
             plain_block.encrypt(key, iv)
         })
         .collect();
@@ -207,7 +208,7 @@ mod tests {
         let decrypted3 = decrypt(&encrypted3, &key3, &iv);
         let decrypted3_text = std::str::from_utf8(&decrypted3).unwrap()[..PLAINTEXT.len()].to_string();
         assert_eq!(PLAINTEXT.to_string(), decrypted3_text.to_string());
-        
+
         let key4 = Key::generate(INITIAL_KEY_SECURITY_LEVEL * 8, 3).unwrap();
         let encrypted4 = increase_security_level(&encrypted3, &iv, &key3, &key4).unwrap();
         let decrypted4 = decrypt(&encrypted4, &key4, &iv);

@@ -4,7 +4,7 @@ use flate2::write::ZlibEncoder;
 use std::io::Write;
 use polynomial_ring::polynomial;
 
-//const PLAINTEXT: &[u8] = include_bytes!("data/poem.txt");
+//const PLAINTEXT: &[u8] = include_bytes!("data/Les_Misérables.txt");
 const PLAINTEXT: &[u8] = b"Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!";
 
 fn main() {
@@ -15,6 +15,7 @@ fn main() {
     let encrypted = encrypt(PLAINTEXT, &key1, &iv);
     let elapsed = start.elapsed();
     println!("Encryption took: {:?}", elapsed);
+    
     //println!("Encrypted: {}", encrypted.len());
     //println!("PLAIN: {:?}", PLAINTEXT);
     let decrypted = decrypt(&encrypted, &key1, &iv);

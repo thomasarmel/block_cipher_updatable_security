@@ -52,7 +52,6 @@ impl Key {
         block_count: u64,
     ) -> Polynomial<i64> {
         let a = iv.pow(((block_count as usize) << self.key_generation) + 1, &self.modulus_polynomial);
-        //println!("enc block: ({}) * ({})^{} mod ({})", self.key, iv.polynomial(), block_count + 1, self.modulus_polynomial);
         polymul_fast(
             &a,
             &self.key,
