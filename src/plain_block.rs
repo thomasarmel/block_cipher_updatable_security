@@ -1,6 +1,5 @@
 use crate::encrypted_block::EncryptedBlock;
-use crate::irreducible_modulos::IrreducibleModulo;
-use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
+use crate::polynomial_algebra::polyadd;
 use crate::{BlockCipherUpdatableSecurityError, Iv, Key, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
 
@@ -58,28 +57,6 @@ impl PlainBlock {
     }
 
     pub(crate) fn encrypt(&self, key: &Key, iv: &Iv) -> EncryptedBlock {
-        let this_modulo = IrreducibleModulo::get_irreducible_modulo(key.security_level());
-        let next_modulo = IrreducibleModulo::get_irreducible_modulo(key.security_level() * 2);
-        let mul_next_modulo = polymul_fast(
-            &key.polynomial(),
-            &iv.pow(self.block_count as usize + 1, &next_modulo), // TODO: pow((block_count * multiplicator) + 1)
-            POLYNOMIAL_Q as i64,
-            &next_modulo,
-        );
-        let mul_this_modulo = polymul_fast(
-            &key.polynomial(),
-            &iv.pow(self.block_count as usize + 1, &this_modulo), // TODO: pow((block_count * multiplicator) + 1)
-            POLYNOMIAL_Q as i64,
-            &this_modulo,
-        );
-        let mult_next_modulo = polysub(
-            &mul_next_modulo,
-            &mul_this_modulo,
-            POLYNOMIAL_Q as i64,
-            &next_modulo,
-        );
-        //println!("m({}) = {}", self.block_count, self.block_polynomial);
-        //println!("mult: ({}) * ({})^{} mod ({}) - same mod ({})", key.polynomial(), iv.polynomial(), self.block_count + 1, next_modulo, this_modulo);
         EncryptedBlock::new(
             polyadd(
                 &self.block_polynomial,
@@ -87,7 +64,7 @@ impl PlainBlock {
                 POLYNOMIAL_Q as i64,
                 key.get_modulus_polynomial(),
             ),
-            mult_next_modulo,
+            key.prepare_next_multiplier(iv, self.block_count as usize),
             self.block_count,
         )
     }

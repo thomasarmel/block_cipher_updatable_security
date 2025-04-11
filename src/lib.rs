@@ -19,7 +19,9 @@ pub use key::Key;
 use polynomial_ring::Polynomial;
 use rand_distr::num_traits::{One, Zero};
 
-const POLYNOMIAL_Q: usize = 268409857;
+// POLYNOMIAL_Q is prime
+// POLYNOMIAL_Q - 1 mod (2^15) = 0
+const POLYNOMIAL_Q: usize = 945586177;
 
 pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
     let security_level = key.security_level();
@@ -70,7 +72,7 @@ pub fn increase_security_level(
     let temp_key_polynomial = polymul_fast(
         &polyadd(
             &polymul_fast(
-                &iv.polynomial(),
+                &iv.pow(1 << old_key.key_generation(), new_key.get_modulus_polynomial()),
                 &generate_merging_block_polynomial(old_security_level),
                 POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
@@ -116,7 +118,7 @@ pub fn increase_security_level(
             let new_key_factor =
                 new_key.generate_encryption_factor_polynomial(iv, super_block_count as u64);
             let temp_key_factor = polymul_fast(
-                &iv.pow(2 * super_block_count + 1, new_key.get_modulus_polynomial()), // TODO pow
+                &iv.pow((super_block_count << new_key.key_generation()) + 1, new_key.get_modulus_polynomial()),
                 &temp_key_polynomial,
                 POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
@@ -134,7 +136,7 @@ pub fn increase_security_level(
                     POLYNOMIAL_Q as i64,
                     new_key.get_modulus_polynomial(),
                 ),
-                Polynomial::zero(), // TODO
+                new_key.prepare_next_multiplier(iv, super_block_count),
                 super_block_count as u64,
             )
         })
@@ -152,7 +154,7 @@ mod tests {
         const PLAINTEXT: &[u8] = include_bytes!("data/poem.txt");
         const SECURITY_LEVEL: usize = 128;
         let iv = Iv::generate(SECURITY_LEVEL);
-        let key1 = Key::generate(SECURITY_LEVEL).unwrap();
+        let key1 = Key::generate(SECURITY_LEVEL, 0).unwrap();
         let encrypted = encrypt(PLAINTEXT, &key1, &iv);
 
         let decrypted = decrypt(&encrypted, &key1, &iv);
@@ -162,16 +164,18 @@ mod tests {
     #[test]
     fn test_reencryption() {
         const PLAINTEXT: &'static str = "Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!";
+        const INITIAL_KEY_SECURITY_LEVEL: usize = 128;
+        const IV_SECURITY_LEVEL: usize = 256;
         let plain_bytes = PLAINTEXT.as_bytes();
 
-        let iv = Iv::generate(128);
-        let key1 = Key::generate(128).unwrap();
+        let iv = Iv::generate(IV_SECURITY_LEVEL);
+        let key1 = Key::generate(INITIAL_KEY_SECURITY_LEVEL, 0).unwrap();
         let encrypted = encrypt(plain_bytes, &key1, &iv);
         let decrypted = decrypt(&encrypted, &key1, &iv);
         let decrypted_text = std::str::from_utf8(&decrypted).unwrap()[..PLAINTEXT.len()].to_string();
         assert_eq!(PLAINTEXT.to_string(), decrypted_text.to_string());
 
-        let key2 = Key::generate(256).unwrap();
+        let key2 = Key::generate(INITIAL_KEY_SECURITY_LEVEL * 2, 1).unwrap();
         let encrypted2 = increase_security_level(&encrypted, &iv, &key1, &key2).unwrap();
         let decrypted2 = decrypt(&encrypted2, &key2, &iv);
         let decrypted2_text = std::str::from_utf8(&decrypted2).unwrap()[..PLAINTEXT.len()].to_string();

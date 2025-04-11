@@ -42,20 +42,23 @@ impl Iv {
         &self.polynomial
     }
 
-    pub(crate) fn pow(&self, exponent: usize, modulo: &Polynomial<i64>) -> Polynomial<i64> {
-        let index = exponent - 1;
-        let cache_position = modulo.deg().unwrap();
-        if !self.pow_cache.borrow().contains_key(&cache_position) {
-            self.pow_cache.borrow_mut().insert(cache_position, vec![self.polynomial.clone()]);
-        }
-        let cache_len = self.pow_cache.borrow().get(&cache_position).unwrap().len();
-        if cache_len == index {
-            let next = polymul_fast(&self.polynomial, &self.pow_cache.borrow().get(&cache_position).unwrap()[index - 1], POLYNOMIAL_Q as i64, modulo);
-            self.pow_cache.borrow_mut().get_mut(&cache_position).unwrap().push(next.clone());
-            return next;
-        }
-        if cache_len > index {
-            return self.pow_cache.borrow().get(&cache_position).unwrap()[index].clone();
+    pub(crate) fn pow(&self, exponent: usize, modulo: &Polynomial<i64>) -> Polynomial<i64> { // TODO cache only works for first encryption
+        const ACTIVATE_CACHE: bool = false;
+        if ACTIVATE_CACHE {
+            let index = exponent - 1;
+            let cache_position = modulo.deg().unwrap();
+            if !self.pow_cache.borrow().contains_key(&cache_position) {
+                self.pow_cache.borrow_mut().insert(cache_position, vec![self.polynomial.clone()]);
+            }
+            let cache_len = self.pow_cache.borrow().get(&cache_position).unwrap().len();
+            if cache_len == index {
+                let next = polymul_fast(&self.polynomial, &self.pow_cache.borrow().get(&cache_position).unwrap()[index - 1], POLYNOMIAL_Q as i64, modulo);
+                self.pow_cache.borrow_mut().get_mut(&cache_position).unwrap().push(next.clone());
+                return next;
+            }
+            if cache_len > index {
+                return self.pow_cache.borrow().get(&cache_position).unwrap()[index].clone();
+            }
         }
         poly_pow_mod(
             &self.polynomial,

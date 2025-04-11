@@ -9,29 +9,31 @@ use sha3::{Digest, Sha3_256};
 pub struct Key {
     key: Polynomial<i64>,
     security_level: usize,
+    key_generation: usize, // Generation 0: first key for cipher etc.
     modulus_polynomial: Polynomial<i64>, // no need for serialization
 }
 
 impl Key {
-    pub fn generate(
-        key_size_bits_security_level: usize,
-    ) -> Result<Self, BlockCipherUpdatableSecurityError> {
+    pub fn generate(key_size_bits_security_level: usize, key_generation: usize) -> Result<Self, BlockCipherUpdatableSecurityError> {
         if key_size_bits_security_level.count_ones() != 1 || key_size_bits_security_level < 128 {
             return Err(BlockCipherUpdatableSecurityError::InvalidKeySize);
         }
         Ok(Self {
             key: gen_uniform_poly(key_size_bits_security_level, POLYNOMIAL_Q as i64, None),
             security_level: key_size_bits_security_level,
+            key_generation,
             modulus_polynomial: IrreducibleModulo::get_irreducible_modulo(
                 key_size_bits_security_level,
             ),
         })
     }
 
-    pub fn from_polynomial(key: &Polynomial<i64>, security_level: usize) -> Self { // TODO pub(crate)
+    #[allow(dead_code)]
+    pub(crate) fn from_polynomial(key: &Polynomial<i64>, security_level: usize, key_generation: usize) -> Self {
         Self {
             key: key.clone(),
             security_level,
+            key_generation,
             modulus_polynomial: IrreducibleModulo::get_irreducible_modulo(security_level),
         }
     }
@@ -40,13 +42,16 @@ impl Key {
         self.security_level
     }
 
+    pub fn key_generation(&self) -> usize {
+        self.key_generation
+    }
+
     pub(crate) fn generate_encryption_factor_polynomial(
         &self,
         iv: &Iv,
         block_count: u64,
     ) -> Polynomial<i64> {
-        // TODO: pow((block_count * multiplicator) + 1)
-        let a = iv.pow(block_count as usize + 1, &self.modulus_polynomial);
+        let a = iv.pow(((block_count as usize) << self.key_generation) + 1, &self.modulus_polynomial);
         //println!("enc block: ({}) * ({})^{} mod ({})", self.key, iv.polynomial(), block_count + 1, self.modulus_polynomial);
         polymul_fast(
             &a,
@@ -122,6 +127,29 @@ impl Key {
                 .collect(),
         )
     }
+
+    pub(crate) fn prepare_next_multiplier(&self, iv: &Iv, block_count: usize) -> Polynomial<i64> {
+        let this_modulo = IrreducibleModulo::get_irreducible_modulo(self.security_level());
+        let next_modulo = IrreducibleModulo::get_irreducible_modulo(self.security_level() * 2);
+        let mul_next_modulo = polymul_fast(
+            &self.polynomial(),
+            &iv.pow((block_count << self.key_generation) + 1, &next_modulo),
+            POLYNOMIAL_Q as i64,
+            &next_modulo,
+        );
+        let mul_this_modulo = polymul_fast(
+            &self.polynomial(),
+            &iv.pow((block_count << self.key_generation) + 1, &this_modulo),
+            POLYNOMIAL_Q as i64,
+            &this_modulo,
+        );
+        polysub(
+            &mul_next_modulo,
+            &mul_this_modulo,
+            POLYNOMIAL_Q as i64,
+            &next_modulo,
+        )
+    }
 }
 
 #[cfg(test)]
@@ -130,20 +158,20 @@ mod tests {
 
     #[test]
     fn test_generate() {
-        let key = Key::generate(128).unwrap();
+        let key = Key::generate(128, 0).unwrap();
         assert_eq!(key.security_level(), 128);
 
-        let key = Key::generate(256).unwrap();
+        let key = Key::generate(256, 0).unwrap();
         assert_eq!(key.security_level(), 256);
 
-        let key = Key::generate(64);
+        let key = Key::generate(64, 0);
         assert!(key.is_err());
         assert_eq!(
             key.unwrap_err(),
             BlockCipherUpdatableSecurityError::InvalidKeySize
         );
 
-        let key = Key::generate(130);
+        let key = Key::generate(130, 0);
         assert!(key.is_err());
         assert_eq!(
             key.unwrap_err(),
