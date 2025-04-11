@@ -17,7 +17,7 @@ pub use error::BlockCipherUpdatableSecurityError;
 pub use iv::Iv;
 pub use key::Key;
 use polynomial_ring::Polynomial;
-use rand_distr::num_traits::{One, Zero};
+use rand_distr::num_traits::One;
 
 // POLYNOMIAL_Q is prime
 // POLYNOMIAL_Q - 1 mod (2^15) = 0
@@ -180,5 +180,38 @@ mod tests {
         let decrypted2 = decrypt(&encrypted2, &key2, &iv);
         let decrypted2_text = std::str::from_utf8(&decrypted2).unwrap()[..PLAINTEXT.len()].to_string();
         assert_eq!(PLAINTEXT.to_string(), decrypted2_text.to_string());
+    }
+
+    #[test]
+    fn test_multiple_reencryptions() {
+        const PLAINTEXT: &'static str = "Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!";
+        const INITIAL_KEY_SECURITY_LEVEL: usize = 128;
+        const IV_SECURITY_LEVEL: usize = 256;
+        let plain_bytes = PLAINTEXT.as_bytes();
+
+        let iv = Iv::generate(IV_SECURITY_LEVEL);
+        let key1 = Key::generate(INITIAL_KEY_SECURITY_LEVEL, 0).unwrap();
+        let encrypted = encrypt(plain_bytes, &key1, &iv);
+        let decrypted = decrypt(&encrypted, &key1, &iv);
+        let decrypted_text = std::str::from_utf8(&decrypted).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted_text.to_string());
+
+        let key2 = Key::generate(INITIAL_KEY_SECURITY_LEVEL * 2, 1).unwrap();
+        let encrypted2 = increase_security_level(&encrypted, &iv, &key1, &key2).unwrap();
+        let decrypted2 = decrypt(&encrypted2, &key2, &iv);
+        let decrypted2_text = std::str::from_utf8(&decrypted2).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted2_text.to_string());
+
+        let key3 = Key::generate(INITIAL_KEY_SECURITY_LEVEL * 4, 2).unwrap();
+        let encrypted3 = increase_security_level(&encrypted2, &iv, &key2, &key3).unwrap();
+        let decrypted3 = decrypt(&encrypted3, &key3, &iv);
+        let decrypted3_text = std::str::from_utf8(&decrypted3).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted3_text.to_string());
+        
+        let key4 = Key::generate(INITIAL_KEY_SECURITY_LEVEL * 8, 3).unwrap();
+        let encrypted4 = increase_security_level(&encrypted3, &iv, &key3, &key4).unwrap();
+        let decrypted4 = decrypt(&encrypted4, &key4, &iv);
+        let decrypted4_text = std::str::from_utf8(&decrypted4).unwrap()[..PLAINTEXT.len()].to_string();
+        assert_eq!(PLAINTEXT.to_string(), decrypted4_text.to_string());
     }
 }

@@ -38,6 +38,7 @@ impl Iv {
         self.initial_security
     }
 
+    #[allow(dead_code)]
     pub(crate) fn polynomial(&self) -> &Polynomial<i64> {
         &self.polynomial
     }

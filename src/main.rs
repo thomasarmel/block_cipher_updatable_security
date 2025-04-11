@@ -1,4 +1,3 @@
-use polynomial_ring::Polynomial;
 use block_cipher_updatable_security::{Iv, Key, decrypt, encrypt, increase_security_level};
 use flate2::Compression;
 use flate2::write::ZlibEncoder;
