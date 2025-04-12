@@ -1,4 +1,3 @@
-use crate::polynomial_algebra::poly_pow_mod;
 use crate::utils::gen_uniform_poly;
 use crate::{POLYMULTIPLIER, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
@@ -44,30 +43,21 @@ impl Iv {
     }
 
     pub(crate) fn pow(&self, exponent: usize, modulo: &Polynomial<i64>) -> Polynomial<i64> {
-        const ACTIVATE_CACHE: bool = true;
-        if ACTIVATE_CACHE {
-            let index = exponent - 1;
-            let cache_position = modulo.deg().unwrap();
-            let mut table_cache_vec = self.pow_cache.borrow_mut();
-            if !table_cache_vec.contains_key(&cache_position) {
-                table_cache_vec.insert(cache_position, vec![self.polynomial.clone()]);
-            }
-            let cache_vec = table_cache_vec.get_mut(&cache_position).unwrap();
-            while cache_vec.len() <= index {
-                let next = POLYMULTIPLIER.polymul_fast(
-                    &self.polynomial,
-                    &cache_vec[cache_vec.len() - 1],
-                    modulo,
-                );
-                cache_vec.push(next.clone());
-            }
-            return cache_vec[index].clone();
+        let index = exponent - 1;
+        let cache_position = modulo.deg().unwrap();
+        let mut table_cache_vec = self.pow_cache.borrow_mut();
+        if !table_cache_vec.contains_key(&cache_position) {
+            table_cache_vec.insert(cache_position, vec![self.polynomial.clone()]);
         }
-        poly_pow_mod(
-            &self.polynomial,
-            exponent,
-            POLYNOMIAL_Q as i64,
-            &modulo,
-        )
+        let cache_vec = table_cache_vec.get_mut(&cache_position).unwrap();
+        while cache_vec.len() <= index {
+            let next = POLYMULTIPLIER.polymul_fast(
+                &self.polynomial,
+                &cache_vec[cache_vec.len() - 1],
+                modulo,
+            );
+            cache_vec.push(next.clone());
+        }
+        cache_vec[index].clone()
     }
 }

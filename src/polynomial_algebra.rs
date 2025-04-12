@@ -15,7 +15,7 @@ use std::sync::Mutex;
 /// polynomial in Z_modulus[X]
 pub(crate) fn mod_coeffs(x: Polynomial<i64>, modulus: i64) -> Polynomial<i64> {
     let coeffs = x.coeffs();
-    let mut newcoeffs = vec![];
+    let mut newcoeffs = Vec::with_capacity(coeffs.len());
     let mut c;
     if coeffs.len() == 0 {
         // return original input for the zero polynomial
@@ -116,10 +116,10 @@ pub fn polymul(x : &Polynomial<i64>, y : &Polynomial<i64>, q : i64, f : &Polynom
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn poly_pow_mod(
     x: &Polynomial<i64>,
     n: usize,
-    q: i64,
     modulus: &Polynomial<i64>,
 ) -> Polynomial<i64> {
     let mut r = Polynomial::one();
@@ -149,7 +149,7 @@ pub(crate) fn polyrem(x: Polynomial<i64>, f: &Polynomial<i64>) -> Polynomial<i64
     } else {
         for i in n..coeffs.len() {
             coeffs[i % n] =
-                coeffs[i % n] + (-1 as i64).pow((i / n).try_into().unwrap()) * coeffs[i];
+                coeffs[i % n] + (-1i64).pow((i / n).try_into().unwrap()) * coeffs[i];
         }
         coeffs.resize(n, 0);
         Polynomial::new(coeffs)
@@ -214,19 +214,19 @@ pub(crate) fn polysub(
 
 #[cfg(test)]
 mod tests {
-    use crate::{POLYMULTIPLIER, POLYNOMIAL_Q};
+    use crate::POLYMULTIPLIER;
     use polynomial_ring::Polynomial;
 
     #[test]
     fn test_poly_pow_mod() {
         let x = Polynomial::new(vec![1, 2, 3]);
         let modulo = Polynomial::new(vec![1, 0, 0, 1]);
-        let result = super::poly_pow_mod(&x, 2, POLYNOMIAL_Q as i64, &modulo);
+        let result = super::poly_pow_mod(&x, 2, &modulo);
         let expected = POLYMULTIPLIER.polymul_fast(&x, &x, &modulo);
         assert_eq!(result, expected);
 
         let expected = POLYMULTIPLIER.polymul_fast(&expected, &x, &modulo);
-        let result = super::poly_pow_mod(&x, 3, POLYNOMIAL_Q as i64, &modulo);
+        let result = super::poly_pow_mod(&x, 3, &modulo);
         assert_eq!(result, expected);
     }
 }
