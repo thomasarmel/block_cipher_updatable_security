@@ -1,6 +1,6 @@
-use crate::polynomial_algebra::{poly_pow_mod, polymul_fast};
+use crate::polynomial_algebra::poly_pow_mod;
 use crate::utils::gen_uniform_poly;
-use crate::POLYNOMIAL_Q;
+use crate::{POLYMULTIPLIER, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -54,10 +54,9 @@ impl Iv {
             }
             let cache_vec = table_cache_vec.get_mut(&cache_position).unwrap();
             while cache_vec.len() <= index {
-                let next = polymul_fast(
+                let next = POLYMULTIPLIER.polymul_fast(
                     &self.polynomial,
                     &cache_vec[cache_vec.len() - 1],
-                    POLYNOMIAL_Q as i64,
                     modulo,
                 );
                 cache_vec.push(next.clone());

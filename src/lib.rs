@@ -9,9 +9,10 @@ mod plain_block;
 mod polynomial_algebra;
 mod utils;
 
+use once_cell::sync::Lazy;
 use crate::encrypted_block::EncryptedBlock;
 use crate::plain_block::PlainBlock;
-use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
+use crate::polynomial_algebra::{polyadd, polysub, PolyMultiplier};
 use crate::utils::generate_merging_block_polynomial;
 pub use error::BlockCipherUpdatableSecurityError;
 pub use iv::Iv;
@@ -22,6 +23,8 @@ use rand_distr::num_traits::One;
 // POLYNOMIAL_Q is prime
 // POLYNOMIAL_Q - 1 mod (2^15) = 0
 const POLYNOMIAL_Q: usize = 945586177;
+
+static POLYMULTIPLIER: Lazy<PolyMultiplier> = Lazy::new(|| PolyMultiplier::new());
 
 pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
     let security_level = key.security_level();
@@ -72,12 +75,11 @@ pub fn increase_security_level(
         return Err(BlockCipherUpdatableSecurityError::InvalidNewKeySecurityLevel);
     }
 
-    let temp_key_polynomial = polymul_fast(
+    let temp_key_polynomial = POLYMULTIPLIER.polymul_fast(
         &polyadd(
-            &polymul_fast(
+            &POLYMULTIPLIER.polymul_fast(
                 &iv.pow(1 << old_key.key_generation(), new_key.get_modulus_polynomial()),
                 &generate_merging_block_polynomial(old_security_level),
-                POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
             ),
             &Polynomial::one(),
@@ -85,7 +87,6 @@ pub fn increase_security_level(
             new_key.get_modulus_polynomial(),
         ),
         &old_key.polynomial(),
-        POLYNOMIAL_Q as i64,
         new_key.get_modulus_polynomial(),
     );
 
@@ -105,10 +106,9 @@ pub fn increase_security_level(
 
             let (even_block, odd_block) = (&encrypted_blocks_bytes[0], &encrypted_blocks_bytes[1]);
             let expanded_block = polyadd(
-                &polymul_fast(
+                &POLYMULTIPLIER.polymul_fast(
                     &polyadd(&odd_block.enc_polynomial(), &odd_block.mul_polynomial(), POLYNOMIAL_Q as i64, new_key.get_modulus_polynomial()),
                     &generate_merging_block_polynomial(old_security_level),
-                    POLYNOMIAL_Q as i64,
                     new_key.get_modulus_polynomial(),
                 ),
                 &polyadd(&even_block.enc_polynomial(), &even_block.mul_polynomial(), POLYNOMIAL_Q as i64, new_key.get_modulus_polynomial()),
@@ -120,10 +120,9 @@ pub fn increase_security_level(
         .map(|(super_block_count, temp_polynomial)| {
             let new_key_factor =
                 new_key.generate_encryption_factor_polynomial(iv, super_block_count as u64);
-            let temp_key_factor = polymul_fast(
+            let temp_key_factor = POLYMULTIPLIER.polymul_fast(
                 &iv.pow((super_block_count << new_key.key_generation()) + 1, new_key.get_modulus_polynomial()),
                 &temp_key_polynomial,
-                POLYNOMIAL_Q as i64,
                 new_key.get_modulus_polynomial(),
             );
             let delta = polysub(

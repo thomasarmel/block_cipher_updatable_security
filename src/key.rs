@@ -1,7 +1,7 @@
 use crate::irreducible_modulos::IrreducibleModulo;
-use crate::polynomial_algebra::{polyadd, polymul_fast, polysub};
+use crate::polynomial_algebra::{polyadd, polysub};
 use crate::utils::{gen_ternary_poly, gen_uniform_poly};
-use crate::{BlockCipherUpdatableSecurityError, Iv, POLYNOMIAL_Q};
+use crate::{BlockCipherUpdatableSecurityError, Iv, POLYMULTIPLIER, POLYNOMIAL_Q};
 use polynomial_ring::Polynomial;
 use sha3::{Digest, Sha3_256};
 
@@ -52,10 +52,9 @@ impl Key {
         block_count: u64,
     ) -> Polynomial<i64> {
         let a = iv.pow(((block_count as usize) << self.key_generation) + 1, &self.modulus_polynomial);
-        polymul_fast(
+        POLYMULTIPLIER.polymul_fast(
             &a,
             &self.key,
-            POLYNOMIAL_Q as i64,
             &self.modulus_polynomial,
         )
     }
@@ -130,16 +129,14 @@ impl Key {
     pub(crate) fn prepare_next_multiplier(&self, iv: &Iv, block_count: usize) -> Polynomial<i64> {
         let this_modulo = IrreducibleModulo::get_irreducible_modulo(self.security_level());
         let next_modulo = IrreducibleModulo::get_irreducible_modulo(self.security_level() * 2);
-        let mul_next_modulo = polymul_fast(
+        let mul_next_modulo = POLYMULTIPLIER.polymul_fast(
             &self.polynomial(),
             &iv.pow((block_count << self.key_generation) + 1, &next_modulo),
-            POLYNOMIAL_Q as i64,
             &next_modulo,
         );
-        let mul_this_modulo = polymul_fast(
+        let mul_this_modulo = POLYMULTIPLIER.polymul_fast(
             &self.polynomial(),
             &iv.pow((block_count << self.key_generation) + 1, &this_modulo),
-            POLYNOMIAL_Q as i64,
             &this_modulo,
         );
         polysub(
