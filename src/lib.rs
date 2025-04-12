@@ -25,20 +25,22 @@ const POLYNOMIAL_Q: usize = 945586177;
 
 pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
     let security_level = key.security_level();
+    let mut padded_bytes = vec![0u8; security_level];
+
     let cipher_blocks: Vec<EncryptedBlock> = plaintext
         .chunks(security_level / 8)
         .enumerate()
         .map(|(block_count, plain_block_bytes)| {
-            let mut padded_bytes = vec![0u8; security_level];
-            let plain_block_bytes = if plain_block_bytes.len() == security_level {
+            let plain_block_bytes_len = plain_block_bytes.len();
+            let plain_block_bytes = if plain_block_bytes_len == security_level {
                 plain_block_bytes
             } else {
-                padded_bytes[..plain_block_bytes.len()].copy_from_slice(plain_block_bytes);
+                padded_bytes[plain_block_bytes_len..].fill(0);
+                padded_bytes[..plain_block_bytes_len].copy_from_slice(plain_block_bytes);
                 &*padded_bytes
             };
             let plain_block =
                 PlainBlock::from_bytes(plain_block_bytes, block_count as u64).unwrap();
-            //println!("{}", block_count);
             plain_block.encrypt(key, iv)
         })
         .collect();
