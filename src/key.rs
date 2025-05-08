@@ -139,11 +139,17 @@ impl Key {
             &iv.pow((block_count << self.key_generation) + 1, &this_modulo),
             &this_modulo,
         );
-        polysub(
-            &mul_next_modulo,
-            &mul_this_modulo,
+        let error = gen_ternary_poly(self.security_level << 1, None);
+        polyadd(
+            &error,
+            &polysub(
+                &mul_next_modulo,
+                &mul_this_modulo,
+                POLYNOMIAL_Q as i64,
+                &next_modulo,
+            ),
             POLYNOMIAL_Q as i64,
-            &next_modulo,
+            &next_modulo
         )
     }
 }
