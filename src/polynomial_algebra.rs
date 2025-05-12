@@ -3,7 +3,7 @@
 use crate::{POLYMULTIPLIER, POLYNOMIAL_Q};
 use ntt::polymul_ntt;
 use polynomial_ring::Polynomial;
-use rand_distr::num_traits::One;
+use rand_distr::num_traits::{One};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -91,7 +91,7 @@ impl PolyMultiplier {
 
         // Construct the result polynomial and reduce modulo f
         let mut r = Polynomial::new(r_coeffs);
-        r = polyrem(r, modulus);
+        r = polyrem(r, modulus, q);
         mod_coeffs(r, q)
     }
 }
@@ -107,7 +107,7 @@ impl PolyMultiplier {
 #[allow(dead_code)]
 pub fn polymul(x : &Polynomial<i64>, y : &Polynomial<i64>, q : i64, f : &Polynomial<i64>) -> Polynomial<i64> {
     let mut r = x*y;
-    r = polyrem(r,f);
+    r = polyrem(r,f, q);
     if q != 0 {
         mod_coeffs(r, q)
     }
@@ -135,25 +135,69 @@ pub(crate) fn poly_pow_mod(
     r
 }
 
-/// Polynomial remainder of x modulo f assuming f=x^n+1
+/// Computes a / b mod q, returning the result in [-q/2, q/2]
+fn moddiv_centered(a: i64, b: i64, q: i64) -> i64 {
+    if b % q == 0 {
+        panic!("Division by zero modulo {}", q);
+    }
+
+    let inv_b = modinv(b, q);
+    let result = (a * inv_b).rem_euclid(q);
+    centered_mod(result, q)
+}
+
+/// Modular inverse of b mod q using Fermat’s Little Theorem (q prime)
+fn modinv(b: i64, q: i64) -> i64 {
+    modpow(b.rem_euclid(q), q - 2, q)
+}
+
+/// Modular exponentiation: base^exp mod q
+fn modpow(mut base: i64, mut exp: i64, q: i64) -> i64 {
+    base = base.rem_euclid(q);
+    let mut result = 1;
+    while exp > 0 {
+        if exp % 2 == 1 {
+            result = result * base % q;
+        }
+        base = base * base % q;
+        exp /= 2;
+    }
+    result
+}
+
+fn centered_mod(a: i64, q: i64) -> i64 {
+    let r = a.rem_euclid(q);
+    if r > q / 2 {
+        r - q
+    } else {
+        r
+    }
+}
+
+/// Polynomial remainder of x modulo f
 /// # Arguments:
 /// * `x` - polynomial in Z[X]
 ///	* `f` - polynomial modulus
 /// # Returns:
 /// polynomial in Z[X]/(f)
-pub(crate) fn polyrem(x: Polynomial<i64>, f: &Polynomial<i64>) -> Polynomial<i64> {
-    let n = f.coeffs().len() - 1;
-    let mut coeffs = x.coeffs().to_vec();
-    if coeffs.len() < n + 1 {
-        Polynomial::new(coeffs)
-    } else {
-        for i in n..coeffs.len() {
-            coeffs[i % n] =
-                coeffs[i % n] + (-1i64).pow((i / n).try_into().unwrap()) * coeffs[i];
+pub(crate) fn polyrem(x: Polynomial<i64>, f: &Polynomial<i64>, q: i64) -> Polynomial<i64> {
+    let f_coeffs = f.coeffs();
+    let f_deg = f.deg().unwrap();
+    let x_deg = x.deg().unwrap();
+
+    let mut r = x;
+
+    for i in (f_deg..=x_deg).rev() {
+        let t = moddiv_centered(r.coeffs()[i], f_coeffs[f_deg], q);
+        let mut coefs_r = r.coeffs().to_vec();
+        coefs_r[i] = 0;
+        for j in 0..f_deg {
+            coefs_r[i - f_deg + j] = centered_mod(coefs_r[i - f_deg + j] - f_coeffs[j] * t, q);
         }
-        coeffs.resize(n, 0);
-        Polynomial::new(coeffs)
+        r = Polynomial::new(coefs_r);
     }
+
+    r
 }
 
 /// Additive inverse of a polynomial
@@ -187,7 +231,7 @@ pub(crate) fn polyadd(
     f: &Polynomial<i64>,
 ) -> Polynomial<i64> {
     let mut r = x + y;
-    r = polyrem(r, f);
+    r = polyrem(r, f, modulus);
     if modulus != 0 {
         mod_coeffs(r, modulus)
     } else {
@@ -214,6 +258,7 @@ pub(crate) fn polysub(
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Rem;
     use crate::POLYMULTIPLIER;
     use polynomial_ring::Polynomial;
 
@@ -228,5 +273,13 @@ mod tests {
         let expected = POLYMULTIPLIER.polymul_fast(&expected, &x, &modulo);
         let result = super::poly_pow_mod(&x, 3, &modulo);
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_polyrem() {
+        let x = Polynomial::new(vec![0, 0, 9]);
+        let f = Polynomial::new(vec![10, 4, 1]);
+        let result = super::polyrem(x.clone(), &f, 13);
+        assert_eq!(result, super::mod_coeffs(x.rem(f), 13));
     }
 }
