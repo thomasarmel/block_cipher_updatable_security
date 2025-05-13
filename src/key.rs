@@ -14,7 +14,10 @@ pub struct Key {
 }
 
 impl Key {
-    pub fn generate(key_size_bits_security_level: usize, key_generation: usize) -> Result<Self, BlockCipherUpdatableSecurityError> {
+    pub fn generate(
+        key_size_bits_security_level: usize,
+        key_generation: usize,
+    ) -> Result<Self, BlockCipherUpdatableSecurityError> {
         if key_size_bits_security_level.count_ones() != 1 || key_size_bits_security_level < 128 {
             return Err(BlockCipherUpdatableSecurityError::InvalidKeySize);
         }
@@ -29,7 +32,11 @@ impl Key {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn from_polynomial(key: &Polynomial<i64>, security_level: usize, key_generation: usize) -> Self {
+    pub(crate) fn from_polynomial(
+        key: &Polynomial<i64>,
+        security_level: usize,
+        key_generation: usize,
+    ) -> Self {
         Self {
             key: key.clone(),
             security_level,
@@ -51,12 +58,11 @@ impl Key {
         iv: &Iv,
         block_count: u64,
     ) -> Polynomial<i64> {
-        let a = iv.pow(((block_count as usize) << self.key_generation) + 1, &self.modulus_polynomial);
-        POLYMULTIPLIER.polymul_fast(
-            &a,
-            &self.key,
+        let a = iv.pow(
+            ((block_count as usize) << self.key_generation) + 1,
             &self.modulus_polynomial,
-        )
+        );
+        POLYMULTIPLIER.polymul_fast(&a, &self.key, &self.modulus_polynomial)
     }
 
     pub(crate) fn generate_encryption_polynomial(
@@ -149,7 +155,7 @@ impl Key {
                 &next_modulo,
             ),
             POLYNOMIAL_Q as i64,
-            &next_modulo
+            &next_modulo,
         )
     }
 }

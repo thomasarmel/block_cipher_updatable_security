@@ -33,13 +33,13 @@ pub(crate) fn mod_coeffs(x: Polynomial<i64>, modulus: i64) -> Polynomial<i64> {
 }
 
 pub(crate) struct PolyMultiplier {
-    omega_cache: Mutex<HashMap<usize, i64>>
+    omega_cache: Mutex<HashMap<usize, i64>>,
 }
 
 impl PolyMultiplier {
     pub(crate) fn new() -> Self {
         Self {
-            omega_cache: Mutex::new(HashMap::new())
+            omega_cache: Mutex::new(HashMap::new()),
         }
     }
 
@@ -66,9 +66,9 @@ impl PolyMultiplier {
         self.omega_cache.lock().unwrap().insert(1, 3);*/
         let mut omega_cache = self.omega_cache.lock().unwrap();
         let omega_index = (x.deg().unwrap() + y.deg().unwrap() + 1).next_power_of_two();
-        let omega = omega_cache.entry(omega_index).or_insert_with(|| {
-            ntt::omega(q, omega_index)
-        });
+        let omega = omega_cache
+            .entry(omega_index)
+            .or_insert_with(|| ntt::omega(q, omega_index));
 
         let n1 = x.coeffs().len();
         let n2 = y.coeffs().len();
@@ -105,15 +105,15 @@ impl PolyMultiplier {
 /// # Returns:
 ///	polynomial in Z_q[X]/(f)
 #[allow(dead_code)]
-pub fn polymul(x : &Polynomial<i64>, y : &Polynomial<i64>, q : i64, f : &Polynomial<i64>) -> Polynomial<i64> {
-    let mut r = x*y;
-    r = polyrem(r,f, q);
-    if q != 0 {
-        mod_coeffs(r, q)
-    }
-    else{
-        r
-    }
+pub fn polymul(
+    x: &Polynomial<i64>,
+    y: &Polynomial<i64>,
+    q: i64,
+    f: &Polynomial<i64>,
+) -> Polynomial<i64> {
+    let mut r = x * y;
+    r = polyrem(r, f, q);
+    if q != 0 { mod_coeffs(r, q) } else { r }
 }
 
 #[allow(dead_code)]
@@ -167,11 +167,7 @@ fn modpow(mut base: i64, mut exp: i64, q: i64) -> i64 {
 
 fn centered_mod(a: i64, q: i64) -> i64 {
     let r = a.rem_euclid(q);
-    if r > q / 2 {
-        r - q
-    } else {
-        r
-    }
+    if r > q / 2 { r - q } else { r }
 }
 
 /// Polynomial remainder of x modulo f
@@ -181,22 +177,21 @@ fn centered_mod(a: i64, q: i64) -> i64 {
 /// # Returns:
 /// polynomial in Z[X]/(f)
 pub(crate) fn polyrem(x: Polynomial<i64>, f: &Polynomial<i64>, q: i64) -> Polynomial<i64> {
-    let f_coeffs = f.coeffs();
+    let coeffs_f = f.coeffs();
     let f_deg = f.deg().unwrap();
     let x_deg = x.deg().unwrap();
 
     let mut r = x;
 
+    let mut coefs_r = r.coeffs().to_vec();
     for i in (f_deg..=x_deg).rev() {
-        let t = moddiv_centered(r.coeffs()[i], f_coeffs[f_deg], q);
-        let mut coefs_r = r.coeffs().to_vec();
+        let t = moddiv_centered(coefs_r[i], coeffs_f[f_deg], q);
         coefs_r[i] = 0;
         for j in 0..f_deg {
-            coefs_r[i - f_deg + j] = centered_mod(coefs_r[i - f_deg + j] - f_coeffs[j] * t, q);
+            coefs_r[i - f_deg + j] = centered_mod(coefs_r[i - f_deg + j] - coeffs_f[j] * t, q);
         }
-        r = Polynomial::new(coefs_r);
     }
-
+    r = Polynomial::new(coefs_r);
     r
 }
 
@@ -258,9 +253,9 @@ pub(crate) fn polysub(
 
 #[cfg(test)]
 mod tests {
-    use std::ops::Rem;
     use crate::POLYMULTIPLIER;
     use polynomial_ring::Polynomial;
+    use std::ops::Rem;
 
     #[test]
     fn test_poly_pow_mod() {
