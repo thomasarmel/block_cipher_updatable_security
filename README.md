@@ -30,7 +30,7 @@ The cipher is based on the Ring-LWE problem, which is believed to be secure agai
 
 #### Encrypt a message:
 <details>
-<summary><code>fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8></code></summary>
+<summary><code>fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec&lt;u8&gt;</code></summary>
 
 > <code>plaintext</code>: The plaintext to encrypt.
 
@@ -41,7 +41,7 @@ The cipher is based on the Ring-LWE problem, which is believed to be secure agai
 
 #### Decrypt a message:
 <details>
-<summary><code>fn decrypt(ciphertext: &[u8], key: &Key, iv: &Iv) -> Vec\<u8\></code></summary>
+<summary><code>fn decrypt(ciphertext: &[u8], key: &Key, iv: &Iv) -> Vec&lt;u8&gt;</code></summary>
 
 > <code>ciphertext</code>: The ciphertext to decrypt.
 
@@ -53,7 +53,7 @@ The cipher is based on the Ring-LWE problem, which is believed to be secure agai
 #### Increase security level of a ciphertext:
 
 <details>
-<summary><code>fn increase_security_level(ciphertext: &[u8], iv: &Iv, old_key: &Key, new_key: &Key) -> Result\<Vec\<u8\>, BlockCipherUpdatableSecurityError\></code></summary>
+<summary><code>fn increase_security_level(ciphertext: &[u8], iv: &Iv, old_key: &Key, new_key: &Key) -> Result&lt;Vec&lt;u8&gt;, BlockCipherUpdatableSecurityError&gt;</code></summary>
 
 </details>
 
