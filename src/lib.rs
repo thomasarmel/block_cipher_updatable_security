@@ -27,6 +27,10 @@ const POLYNOMIAL_Q: usize = 945586177;
 static POLYMULTIPLIER: Lazy<PolyMultiplier> = Lazy::new(|| PolyMultiplier::new());
 
 pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
+    if key.key_generation() != 0 {
+        panic!("Key generation must be 0 for first encryption");
+    }
+    
     let security_level = key.security_level();
     let mut padded_bytes = vec![0u8; security_level];
 

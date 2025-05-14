@@ -11,13 +11,13 @@ pub struct Iv {
 }
 
 impl Iv {
-    pub fn generate(initial_security: usize) -> Self {
-        let polynomial = gen_uniform_poly(initial_security, POLYNOMIAL_Q as i64, None);
+    pub fn generate(security_level: usize) -> Self {
+        let polynomial = gen_uniform_poly(security_level, POLYNOMIAL_Q as i64, None);
         let mut cache = HashMap::new();
-        cache.insert(initial_security, vec![polynomial.clone()]);
+        cache.insert(security_level, vec![polynomial.clone()]);
         Self {
             polynomial: polynomial.clone(),
-            initial_security,
+            initial_security: security_level,
             pow_cache: RefCell::new(cache),
         }
     }
