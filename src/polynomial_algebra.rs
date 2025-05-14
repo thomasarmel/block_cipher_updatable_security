@@ -137,6 +137,7 @@ pub(crate) fn poly_pow_mod(
 
 /// Computes a / b mod q, returning the result in [-q/2, q/2]
 fn moddiv_centered(a: i64, b: i64, q: i64) -> i64 {
+    #[allow(dead_code)]
     enum DivMethod {
         FERMAT,
         EUCLID,
