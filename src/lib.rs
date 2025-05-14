@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 extern crate core;
 
 mod encrypted_block;
@@ -30,7 +32,7 @@ pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
     if key.key_generation() != 0 {
         panic!("Key generation must be 0 for first encryption");
     }
-    
+
     let security_level = key.security_level();
     let mut padded_bytes = vec![0u8; security_level];
 
