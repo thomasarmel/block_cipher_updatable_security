@@ -137,13 +137,62 @@ pub(crate) fn poly_pow_mod(
 
 /// Computes a / b mod q, returning the result in [-q/2, q/2]
 fn moddiv_centered(a: i64, b: i64, q: i64) -> i64 {
+    enum DivMethod {
+        FERMAT,
+        EUCLID,
+    }
+
+    const DIV_METHOD: DivMethod = DivMethod::EUCLID;
+
     if b % q == 0 {
         panic!("Division by zero modulo {}", q);
     }
 
-    let inv_b = modinv(b, q);
-    let result = (a * inv_b).rem_euclid(q);
-    centered_mod(result, q)
+    match DIV_METHOD {
+        DivMethod::EUCLID => {
+            let inv_b = modinv_euclid(b, q);
+            let result = (a * inv_b).rem_euclid(q);
+            centered_mod(result, q)
+        },
+        DivMethod::FERMAT => {
+            let inv_b = modinv(b, q);
+            let result = (a * inv_b).rem_euclid(q);
+            centered_mod(result, q)
+        }
+    }
+
+
+}
+
+/// Extended Euclidean algorithm: returns modular inverse of b mod q
+fn modinv_euclid(b: i64, q: i64) -> i64 {
+    let (gcd, x, _) = extended_gcd(b, q);
+    if gcd != 1 {
+        panic!("No modular inverse exists: gcd({}, {}) = {}", b, q, gcd);
+    }
+    x.rem_euclid(q)
+}
+
+/// Extended Euclidean algorithm
+/// Returns (gcd, x, y) such that: a * x + b * y = gcd(a, b)
+fn extended_gcd(mut a: i64, mut b: i64) -> (i64, i64, i64) {
+    let (mut x0, mut x1) = (1, 0);
+    let (mut y0, mut y1) = (0, 1);
+
+    while b != 0 {
+        let q = a / b;
+        let (a_new, b_new) = (b, a % b);
+        a = a_new;
+        b = b_new;
+
+        let (x_new, y_new) = (x1, y1);
+        x1 = x0 - q * x1;
+        y1 = y0 - q * y1;
+        x0 = x_new;
+        y0 = y_new;
+    }
+
+    (a, x0, y0)
 }
 
 /// Modular inverse of b mod q using Fermat’s Little Theorem (q prime)
