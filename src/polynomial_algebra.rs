@@ -1,6 +1,6 @@
 // Inspired from https://github.com/lattice-based-cryptography/ring-lwe/blob/main/src/utils.rs
 
-use crate::{POLYMULTIPLIER, POLYNOMIAL_Q};
+use crate::{MOD_INV_CACHE, POLYMULTIPLIER, POLYNOMIAL_Q};
 use ntt::polymul_ntt;
 use polynomial_ring::Polynomial;
 use rand_distr::num_traits::{One};
@@ -116,6 +116,28 @@ pub fn polymul(
     if q != 0 { mod_coeffs(r, q) } else { r }
 }
 
+pub(crate) struct ModInvCache {
+    cache: Mutex<Vec<Option<i64>>>,
+}
+
+impl ModInvCache {
+    pub(crate) fn new(size: usize) -> Self {
+        Self {
+            cache: Mutex::new(vec![None; size]),
+        }
+    }
+
+    pub(crate) fn get(&self, index: usize) -> Option<i64> {
+        let cache = self.cache.lock().unwrap();
+        cache[index]
+    }
+
+    pub(crate) fn set(&self, index: usize, value: i64) {
+        let mut cache = self.cache.lock().unwrap();
+        cache[index] = Some(value);
+    }
+}
+
 #[allow(dead_code)]
 pub(crate) fn poly_pow_mod(
     x: &Polynomial<i64>,
@@ -138,31 +160,35 @@ pub(crate) fn poly_pow_mod(
 /// Computes a / b mod q, returning the result in [-q/2, q/2]
 fn moddiv_centered(a: i64, b: i64, q: i64) -> i64 {
     #[allow(dead_code)]
-    enum DivMethod {
+    enum InvMethod {
         FERMAT,
         EUCLID,
     }
 
-    const DIV_METHOD: DivMethod = DivMethod::EUCLID;
+    const INV_METHOD: InvMethod = InvMethod::EUCLID;
 
     if b % q == 0 {
         panic!("Division by zero modulo {}", q);
     }
 
-    match DIV_METHOD {
-        DivMethod::EUCLID => {
-            let inv_b = modinv_euclid(b, q);
-            let result = (a * inv_b).rem_euclid(q);
-            centered_mod(result, q)
-        },
-        DivMethod::FERMAT => {
-            let inv_b = modinv(b, q);
-            let result = (a * inv_b).rem_euclid(q);
-            centered_mod(result, q)
+    let inv_b = match MOD_INV_CACHE.get(b as usize) {
+        Some(inv) => inv,
+        None => {
+            let inv = match INV_METHOD {
+                InvMethod::EUCLID => {
+                    modinv_euclid(b, q)
+                },
+                InvMethod::FERMAT => {
+                    modinv(b, q)
+                }
+            };
+            MOD_INV_CACHE.set(b as usize, inv);
+            inv
         }
-    }
+    };
 
-
+    let result = (a * inv_b).rem_euclid(q);
+    centered_mod(result, q)
 }
 
 /// Extended Euclidean algorithm: returns modular inverse of b mod q

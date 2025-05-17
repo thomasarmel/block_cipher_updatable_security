@@ -13,7 +13,7 @@ mod utils;
 
 use crate::encrypted_block::EncryptedBlock;
 use crate::plain_block::PlainBlock;
-use crate::polynomial_algebra::{PolyMultiplier, polyadd, polysub};
+use crate::polynomial_algebra::{PolyMultiplier, polyadd, polysub, ModInvCache};
 use crate::utils::generate_merging_block_polynomial;
 pub use error::BlockCipherUpdatableSecurityError;
 pub use iv::Iv;
@@ -27,6 +27,7 @@ use rand_distr::num_traits::One;
 const POLYNOMIAL_Q: usize = 945586177;
 
 static POLYMULTIPLIER: Lazy<PolyMultiplier> = Lazy::new(|| PolyMultiplier::new());
+static MOD_INV_CACHE: Lazy<ModInvCache> = Lazy::new(|| ModInvCache::new(POLYNOMIAL_Q));
 
 pub fn encrypt(plaintext: &[u8], key: &Key, iv: &Iv) -> Vec<u8> {
     if key.key_generation() != 0 {
