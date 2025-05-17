@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 thiserror = "2.0"
-polynomial-ring = { version = "0.5", features = ["serde"], git = "https://gitlab.com/thomasarmel/polynomial-ring.git" }
+polynomial-ring = { version = "0.5", features = ["serde"] }
 rand = "0.9"
 rand_distr = "0.5"
 ntt = "0.1"
